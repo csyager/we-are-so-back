@@ -1,0 +1,14 @@
+{
+    "game_id": {
+        "S": "test_game"
+    },
+    "player_id": {
+        "S": "test_player"
+    },
+    "x_coord": {
+        "N": "0.5"
+    },
+    "y_coord": {
+        "N": "0.5"
+    }
+}

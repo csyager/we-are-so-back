@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Backend API for we are so back.
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 128
+
+Parameters:
+  ExecEnv:
+    Type: String
+    AllowedValues:
+      - local
+      - prod
+    Default: prod
+  GamePlayersTableName:
+    Type: String
+    Default: GamePlayersTable
+  GamesTableName:
+    Type: String
+    Default: GamesTable
+
+    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    LoggingConfig:
+      LogFormat: JSON
+Resources:
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowMethods: "'POST, GET'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+        MaxAge: "'600'"
+        # AllowCredentials: true  Uncomment only if you choose a specific origin instead of the * wildcard.
+  HandlerFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: flask_api/
+      Handler: app.app
+      Runtime: python3.8
+      Environment:
+        Variables:
+          COORDS_TABLE_NAME: !Ref GamePlayersTableName
+          GAMES_TABLE_NAME: !Ref GamesTableName
+          REGION_NAME: !Ref AWS::Region
+          EXEC_ENV: !Ref ExecEnv
+      Architectures:
+      - x86_64
+      Events:
+        SetCoords:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /coords
+            Method: post
+        GetCoords:
+          Type: Api
+          Properties:
+            Path: /coords
+            Method: get
+        CreateGame:
+          Type: Api
+          Properties:
+            Path: /game
+            Method: post
+        GetGame:
+          Type: Api
+          Properties:
+            Path: /game
+            Method: get
+  # DDB Tables
+  GamePlayersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref GamePlayersTableName
+      AttributeDefinitions:
+        - AttributeName: game_id
+          AttributeType: S
+        - AttributeName: player_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: game_id
+          KeyType: HASH
+        - AttributeName: player_id
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  GamesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref GamesTableName
+      AttributeDefinitions:
+        - AttributeName: game_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: game_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+       
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  HandlerApi:
+    Description: API Gateway endpoint URL for Prod stage for We Are So Back handler function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/"
+  HandlerFunction:
+    Description: We are so back API handler Lambda Function ARN
+    Value: !GetAtt HandlerFunction.Arn
+  HandlerFunctionIamRole:
+    Description: Implicit IAM Role created for Handler function
+    Value: !GetAtt HandlerFunctionRole.Arn
