@@ -33,11 +33,25 @@ function Canvas() {
     return scaledPoint;
   }
 
+  function updateDatabasePlayerPoint(point: Point) {
+    axios.post(API_BASE_URL + 'coords', {
+      "game_id": localStorage.getItem("gameId"),
+      "player_id": localStorage.getItem("userId"),
+      "x_coord": point.x,
+      "y_coord": point.y
+    }).then((response) => {
+      console.log(response);
+    }).catch((error) => {
+      console.log("error: " + error);
+    })
+  }
+
   function setupCanvases(bottomLayer: HTMLCanvasElement, topLayer: HTMLCanvasElement, canvasCard: HTMLElement) {
     console.log("setting up a clear canvas");
     topLayer.addEventListener("mousedown", function (e) {
       const point = getMousePosition(topLayer, e);
       setPlayerPoint(point);
+      updateDatabasePlayerPoint(point);
     });
     const context = bottomLayer.getContext('2d');
     const image = new Image();
@@ -79,15 +93,16 @@ function Canvas() {
     axios.get(API_BASE_URL + 'coords?game_id=' + localStorage.getItem('gameId'))
       .then((response) => {
         console.log(response);
-        let new_points = response.data["Items"].map((item: PlayerCoords) => {
-          console.log("item: " + item);
-          if (item.player_id === localStorage.getItem("player_id")) {
+        let new_points = response.data["Items"].flatMap((item: PlayerCoords) => {
+          if (item.player_id === localStorage.getItem("userId")) {
             console.log("setting player point to value in database");
             setPlayerPoint({x: item.x_coord, y: item.y_coord});
+            return [];
           } else {
             return {x: item.x_coord, y: item.y_coord}
           }
         });
+        console.log("new_points: " + JSON.stringify(new_points));
         setPoints(new_points);
       }).catch((error) => {
         console.log("error: " + error);
@@ -100,8 +115,7 @@ function Canvas() {
   }
 
   function drawPoint(canvasElem: HTMLCanvasElement, point: Point) {
-    console.log("drawing point at adjusted-coords " + point.x + ", " + point.y);
-    // convert percentage-based point to pixel-based
+    console.log("drawing point at adjusted-coords " + point.x + ", " + point.y + " on layer " + canvasElem.id);
 
     // anti-aliasing
     const x = Math.floor(point.x) + 0.5;
@@ -131,7 +145,7 @@ function Canvas() {
     if (bottomLayer == null || topLayer == null) {
       return;
     }
-    if (playerPoint) {
+    if (playerPoint !== null) {
       console.log("drawing player point at " + playerPoint.x + ", " + playerPoint.y);
       clearLayer(topLayer);
       const scaledPoint: Point = getCrosshairPosition(topLayer, playerPoint);
@@ -140,6 +154,7 @@ function Canvas() {
     
     for (let point of points) {
       // convert percentage-based point to pixel-based
+      console.log("drawing non-player point at " + point.x + ", " + point.y);
       const scaledPoint: Point = getCrosshairPosition(bottomLayer, point);
       drawPoint(bottomLayer, scaledPoint);
     }

@@ -11,6 +11,7 @@ from boto3.dynamodb.conditions import Key
 
 from flask import request
 from flask_lambda import FlaskLambda
+from flask_cors import CORS
 
 from validation import SetCoordsSchema, GetCoordsSchema, GetGameSchema
 
@@ -43,6 +44,9 @@ class JSONEncoder(json.JSONEncoder):
 
 
 app = FlaskLambda(__name__)
+
+# CORS configuration
+cors = CORS(app, resources={"*": {"origins": "*"}})
 
 if EXEC_ENV == 'local':
     dynamodb = boto3.resource('dynamodb', endpoint_url='http://dynamodb:8000')
@@ -97,8 +101,8 @@ def get_game():
     if errors:
         return (
             json.dumps({'message': VALIDATION_ERROR_MESSAGE.format(errors)}),
-            400,
-            CORS_HEADERS
+            400
+            # CORS_HEADERS
         )
     
     logger.info("requested game_id: " + game_id)
@@ -113,8 +117,8 @@ def get_game():
                 "Count": response.get("Count"),
                 "Items": response.get("Items")
             }, cls=JSONEncoder),
-            200,
-            CORS_HEADERS
+            200
+            # CORS_HEADERS
         )
     except Exception as err:
         logger.error(
@@ -125,9 +129,8 @@ def get_game():
         return (
             json.dumps({'message': SERVER_ERROR_MESSAGE}),
             500,
-            CORS_HEADERS
+            # CORS_HEADERS
         )
-
 
 
 @app.post('/coords')
@@ -195,7 +198,7 @@ def get_coords():
         return (
             json.dumps({'message': VALIDATION_ERROR_MESSAGE.format(errors)}),
             400,
-            CORS_HEADERS
+            # CORS_HEADERS
         )
 
     logger.info("requested game_id: " + game_id)
@@ -211,7 +214,7 @@ def get_coords():
                 "Items": response.get("Items")
             }, cls=JSONEncoder),
             200,
-            CORS_HEADERS
+            # CORS_HEADERS
         )
     except Exception as err:
         logger.error(
@@ -222,7 +225,7 @@ def get_coords():
         return (
             json.dumps({'message': SERVER_ERROR_MESSAGE}),
             500,
-            CORS_HEADERS
+            # CORS_HEADERS
         )
 
 def lambda_handler(event, context):
