@@ -4,7 +4,7 @@ version = 0.1
 
 [default]
 [default.global.parameters]
-stack_name = "api"
+stack_name = "we-are-so-back-api"
 
 [default.build.parameters]
 cached = true
@@ -17,6 +17,11 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
+s3_prefix = "we-are-so-back-api"
+region = "us-east-1"
+disable_rollback = true
+parameter_overrides = "ExecEnv=\"prod\" GamePlayersTableName=\"GamePlayersTable\" GamesTableName=\"GamesTable\""
+image_repositories = []
 
 [default.package.parameters]
 resolve_s3 = true

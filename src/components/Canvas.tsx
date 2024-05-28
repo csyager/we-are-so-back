@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios';
 
 import MoodMeter from '../assets/mood_meter.jpg'
+import Clipboard from '../assets/clipboard.svg';
 import { API_BASE_URL, CROSSHAIR_SIZE } from '../Constants';
 import PlayerCoords from '../dao/PlayerCoords';
 import PlayerList from './PlayerList';
@@ -67,7 +68,7 @@ function Canvas() {
       topLayer.width = bottomLayer.width;
       topLayer.height = bottomLayer.height;
       topLayer.style.top = "-" + window.getComputedStyle(topLayer, null).getPropertyValue("height");
-      canvasCard.style.height = (parseFloat(window.getComputedStyle(topLayer, null).getPropertyValue("height")) + 60) + "px";
+      canvasCard.style.height = (parseFloat(window.getComputedStyle(topLayer, null).getPropertyValue("height")) + 32) + "px";
       context?.drawImage(image, 0, 0, bottomLayer.width, bottomLayer.height);
     }
   }
@@ -94,11 +95,11 @@ function Canvas() {
     setupCanvases(bottomLayer, topLayer, canvasCard);
 
     // get points to draw from API
-    axios.get(API_BASE_URL + 'coords?game_id=' + localStorage.getItem('gameId'))
+    axios.get(API_BASE_URL + 'coords?game_id=' + gameId)
       .then((response) => {
         console.log(response);
         let new_points = response.data["Items"].flatMap((item: PlayerCoords) => {
-          if (item.player_id === localStorage.getItem("userId")) {
+          if (item.player_id === userId) {
             console.log("setting player point to value in database");
             setPlayerPoint({player_id: item.player_id, x_coord: item.x_coord, y_coord: item.y_coord, color: item.color});
             return [];
@@ -136,7 +137,7 @@ function Canvas() {
      context.lineTo(x, y + CROSSHAIR_SIZE);
      context.moveTo(x - CROSSHAIR_SIZE, y);
      context.lineTo(x + CROSSHAIR_SIZE, y);
-     context.lineWidth=3;
+     context.lineWidth=5;
      context.strokeStyle = point.color;
      context.stroke();
   }
@@ -164,11 +165,18 @@ function Canvas() {
     }
   }, [points, playerPoint]);
 
+  function copyGameId() {
+    const url = window.location.href.split('?')[0];
+    navigator.clipboard.writeText(url + "?game_id=" + gameId);
+    window.alert("Copied shareable link to clipboard.");
+  }
+
 	return (
     <>
       <h3>Touch the graph to place your mood.</h3>
+      <h4>Share this code to invite other players:  <a onClick={copyGameId}><b>{gameId}</b> <img src={Clipboard} /></a></h4>
       <p>Click <a onClick={clearLocalStorage}>here</a> to find a new game</p>
-      <div className="card" id="canvas-card">
+      <div className="card canvas-card" id="canvas-card">
         <canvas id="layer1" className="bottom-layer-canvas"/>
         <canvas id="layer2" className="top-layer-canvas"/>
       </div>

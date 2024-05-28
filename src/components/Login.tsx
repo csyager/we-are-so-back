@@ -3,7 +3,10 @@ import axios from 'axios';
 import { API_BASE_URL } from '../Constants';
 
 export default function Login() {
-    const [formGameId, setFormGameId] = useState<string>("");
+    const searchParams = new URLSearchParams(window.location.search);
+    const paramGameId: string = searchParams.get('game_id') || "";
+
+    const [formGameId, setFormGameId] = useState<string>(paramGameId);
     const [formUserId, setFormUserId] = useState<string>("");
     const [formColor, setFormColor] = useState<string>('#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0'));
     const [errorMsg, setErrorMsg] = useState<string>("");
@@ -59,7 +62,7 @@ export default function Login() {
                 }
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <input type="text" className="form-control" placeholder="Game ID" onChange={(e) => setFormGameId(e.target.value)} required/>    
+                        <input type="text" value={formGameId} className="form-control" placeholder="Game ID" onChange={(e) => setFormGameId(e.target.value)} required/>    
                     </div>
                     <div className="form-group">
                         <input type="text" value={formUserId} className="form-control" placeholder="Display name" onChange={(e) => setFormUserId(e.target.value)} required/>
