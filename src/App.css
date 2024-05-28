@@ -89,3 +89,22 @@ canvas.top-layer-canvas {
   margin-top: 10px;
   margin-bottom: 10px;
 }
+
+label.form-label {
+  display: inline-block;
+  text-align: left !important;
+}
+
+.player-list-item {
+  line-height: 1;
+}
+
+.player-list-crosshair {
+  font-size: 48px;
+}
+
+.player-list-label {
+  position: absolute;
+  top: 26px;
+  margin-left: 10px;
+}

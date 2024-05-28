@@ -4,42 +4,46 @@ import axios from 'axios';
 import MoodMeter from '../assets/mood_meter.jpg'
 import { API_BASE_URL, CROSSHAIR_SIZE } from '../Constants';
 import PlayerCoords from '../dao/PlayerCoords';
-
-interface Point {
-  x: number;
-  y: number;
-}
+import PlayerList from './PlayerList';
 
 function Canvas() {
-  const [points, setPoints] = useState<Array<Point>>([]);
-  const [playerPoint, setPlayerPoint] = useState<Point|null>(null);
+  const [points, setPoints] = useState<Array<PlayerCoords>>([]);
+  const [playerPoint, setPlayerPoint] = useState<PlayerCoords|null>(null);
 
-	function getMousePosition(canvas: any, event: any): Point {
+  // load from local storage
+  let userId: string = localStorage.getItem("userId") || "";
+  let userColor: string = localStorage.getItem("userColor") || "";
+  let gameId: string = localStorage.getItem("gameId") || "";
+
+  if (userId == "" || userColor == "" || gameId == "") {
+    throw new Error("Local state corrupted.");
+  }
+
+	function getMousePosition(canvas: any, event: any): PlayerCoords {
 	    let rect = canvas.getBoundingClientRect();
       const rectWidth = rect.right - rect.left;
       const rectHeight = rect.bottom - rect.top;
 	    let x = (event.clientX - rect.left) / rectWidth;
 	    let y = (event.clientY - rect.top) / rectHeight;
-      const point: Point = {x: x, y: y};
+      const point: PlayerCoords = {player_id: userId, x_coord: x, y_coord: y, color: userColor};
 	    console.log("Coordinate x: " + x, "Coordinate y: " + y);
       return point;
       
 	}
 
-  function getCrosshairPosition(canvas: HTMLCanvasElement, point: Point): Point {
-    let x = point.x * canvas.width;
-    let y = point.y * canvas.height;
-    const scaledPoint: Point = {x: x, y: y};
+  function getCrosshairPosition(canvas: HTMLCanvasElement, point: PlayerCoords): PlayerCoords {
+    let x = point.x_coord * canvas.width;
+    let y = point.y_coord * canvas.height;
+    const scaledPoint: PlayerCoords = {player_id: point.player_id, x_coord: x, y_coord: y, color:point.color};
     return scaledPoint;
   }
 
-  function updateDatabasePlayerPoint(point: Point) {
-    axios.post(API_BASE_URL + 'coords', {
-      "game_id": localStorage.getItem("gameId"),
-      "player_id": localStorage.getItem("userId"),
-      "x_coord": point.x,
-      "y_coord": point.y
-    }).then((response) => {
+  function updateDatabasePlayerPoint(point: PlayerCoords) {
+    let request = {
+      ...point,
+      game_id: gameId
+    };
+    axios.post(API_BASE_URL + 'coords', request).then((response) => {
       console.log(response);
     }).catch((error) => {
       console.log("error: " + error);
@@ -96,10 +100,10 @@ function Canvas() {
         let new_points = response.data["Items"].flatMap((item: PlayerCoords) => {
           if (item.player_id === localStorage.getItem("userId")) {
             console.log("setting player point to value in database");
-            setPlayerPoint({x: item.x_coord, y: item.y_coord});
+            setPlayerPoint({player_id: item.player_id, x_coord: item.x_coord, y_coord: item.y_coord, color: item.color});
             return [];
           } else {
-            return {x: item.x_coord, y: item.y_coord}
+            return item
           }
         });
         console.log("new_points: " + JSON.stringify(new_points));
@@ -114,12 +118,12 @@ function Canvas() {
     window.location.reload();
   }
 
-  function drawPoint(canvasElem: HTMLCanvasElement, point: Point) {
-    console.log("drawing point at adjusted-coords " + point.x + ", " + point.y + " on layer " + canvasElem.id);
+  function drawPoint(canvasElem: HTMLCanvasElement, point: PlayerCoords) {
+    console.log("drawing point at adjusted-coords " + point.x_coord + ", " + point.y_coord + " in color " + point.color + " on layer " + canvasElem.id);
 
     // anti-aliasing
-    const x = Math.floor(point.x) + 0.5;
-    const y = Math.floor(point.y) + 0.5;
+    const x = Math.floor(point.x_coord) + 0.5;
+    const y = Math.floor(point.y_coord) + 0.5;
 
     const context = canvasElem.getContext('2d');
     if (context == null) {
@@ -133,7 +137,7 @@ function Canvas() {
      context.moveTo(x - CROSSHAIR_SIZE, y);
      context.lineTo(x + CROSSHAIR_SIZE, y);
      context.lineWidth=3;
-     context.strokeStyle = 'black';
+     context.strokeStyle = point.color;
      context.stroke();
   }
 
@@ -146,16 +150,16 @@ function Canvas() {
       return;
     }
     if (playerPoint !== null) {
-      console.log("drawing player point at " + playerPoint.x + ", " + playerPoint.y);
+      console.log("drawing player point at " + playerPoint.x_coord + ", " + playerPoint.y_coord);
       clearLayer(topLayer);
-      const scaledPoint: Point = getCrosshairPosition(topLayer, playerPoint);
+      const scaledPoint: PlayerCoords = getCrosshairPosition(topLayer, playerPoint);
       drawPoint(topLayer, scaledPoint);
     }
     
     for (let point of points) {
       // convert percentage-based point to pixel-based
-      console.log("drawing non-player point at " + point.x + ", " + point.y);
-      const scaledPoint: Point = getCrosshairPosition(bottomLayer, point);
+      console.log("drawing non-player point at " + point.x_coord + ", " + point.y_coord);
+      const scaledPoint: PlayerCoords = getCrosshairPosition(bottomLayer, point);
       drawPoint(bottomLayer, scaledPoint);
     }
   }, [points, playerPoint]);
@@ -168,6 +172,7 @@ function Canvas() {
         <canvas id="layer1" className="bottom-layer-canvas"/>
         <canvas id="layer2" className="top-layer-canvas"/>
       </div>
+      <PlayerList players={points} />
     </>
 		
   )

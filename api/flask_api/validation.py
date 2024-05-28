@@ -9,6 +9,7 @@ class SetCoordsSchema(Schema):
     player_id = fields.Str(required=True)
     x_coord = fields.Number(required=True)
     y_coord = fields.Number(required=True)
+    color = fields.Str(required=True)
 
 
 class GetGameSchema(Schema):

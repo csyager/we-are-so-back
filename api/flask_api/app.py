@@ -161,7 +161,8 @@ def set_coords():
         "game_id": payload.get("game_id"),
         "player_id": payload.get("player_id"),
         "x_coord": payload.get("x_coord"),
-        "y_coord": payload.get("y_coord")
+        "y_coord": payload.get("y_coord"),
+        "color": payload.get("color")
     }
     table = db_table(COORDS_TABLE_NAME)
     try:
